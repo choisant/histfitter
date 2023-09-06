@@ -97,6 +97,7 @@ if __name__ == "__main__":
     configMgr.executeHistFactory = False
     runInterpreter = False
     runFit = False
+    createJSON = False
     printLimits = False
     doHypoTests = False
     doDiscoveryHypoTests = False
@@ -116,7 +117,6 @@ if __name__ == "__main__":
     fixedPars = ""
     
     FitType = configMgr.FitType #enum('FitType','Discovery , Exclusion , Background')
-    prefix = "FitType"
     myFitType=FitType.Background
     doValidation = False
     
@@ -139,7 +139,7 @@ if __name__ == "__main__":
     parser.add_argument("-t", "--create-histograms", help="re-create histograms from TTrees", action="store_true", default=configMgr.readFromTree)
     parser.add_argument("-w", "--create-workspace", help="re-create workspace from histograms", action="store_true", default=configMgr.executeHistFactory)
     parser.add_argument("-x", "--use-XML", help="write XML files by hand and call hist2workspace on them, instead of directly writing workspaces", action="store_true", default=configMgr.writeXML)
-    parser.add_argument("-j", "--create-JSON", help="write JSON file from XML output.", action="store_true", default="")
+    parser.add_argument("-j", "--create-JSON", help="write JSON file from XML output.", action="store_true", default=createJSON)
     parser.add_argument("-f", "--fit", help="fit the workspace", action="store_true", default=configMgr.executeHistFactory)
     parser.add_argument("--fitname", dest="fitname", help="workspace name for fit (not specified takes 1st available fitConfig)", default="")
     parser.add_argument("-m", "--minos", help="run minos for asymmetric error calculation, optionally give parameter names for which minos should be run, space separated. For all params, use ALL", metavar="PARAM")
@@ -185,15 +185,12 @@ if __name__ == "__main__":
         sys.exit(-1)
     if HistFitterArgs.fit_type == "bkg":
         myFitType = FitType.Background
-        prefix = "Background"
         log.info("Will run in background-only fit mode")
     elif HistFitterArgs.fit_type == "excl" or HistFitterArgs.fit_type == "model-dep":
         myFitType = FitType.Exclusion
-        prefix = "Exclusion"
         log.info("Will run in exclusion (model-dependent) fit mode")
     elif HistFitterArgs.fit_type == "disc" or HistFitterArgs.fit_type == "model-indep":
         myFitType = FitType.Discovery
-        prefix = "Discovery"
         log.info("Will run in discovery (model-independent) fit mode")
     
     # Combining -p and -z can give funny results. It's not recommend. We stop the user from doing this and
@@ -474,14 +471,19 @@ if __name__ == "__main__":
     """
     create JSONs
     """
+
     if createJSON:
-        if not os.path.isdir("./json"): 
-          log.info("no directory './json' found - attempting to create one")
-          os.mkdir("./json")
-        fileName = f"{configMgr.analysisName}_{prefix}.json"
-        filePath = f"./json/{fileName}"
-        xmlPath = f"./config/{configMgr.analysisName}/{prefix}.xml"
-        create_file = subprocess.run(["pyhf", "xml2json", f"{xmlPath}", "--basedir", ".", 
-                                      "--output-file", f"{filePath}"])
+        if not os.path.isdir("./json"):
+            log.info("no directory './json' found - attempting to create one")
+            os.mkdir("./json")
+        for fc in configMgr.fitConfigs:
+            if not os.path.isdir(f"./json/{configMgr.analysisName}"):
+                os.mkdir(f"./json/{configMgr.analysisName}")
+            prefix = fc.name
+            fileName = f"{configMgr.analysisName}_{prefix}.json"
+            filePath = f"./json/{configMgr.analysisName}/{fileName}"
+            xmlPath = f"./config/{configMgr.analysisName}/{prefix}.xml"
+            create_file = subprocess.run(["pyhf", "xml2json", f"{xmlPath}", "--basedir", ".", 
+                                        "--output-file", f"{filePath}"])
 
     log.info("Leaving HistFitter... Bye!")
