@@ -38,6 +38,7 @@ Util = hf.Util
 #Histfitter imports
 from logger import Logger
 from configManager import configMgr
+from hfpyhf import conversions
 
 #Create logger
 log = Logger('HistFitter')
@@ -477,13 +478,6 @@ if __name__ == "__main__":
             log.info("no directory './json' found - attempting to create one")
             os.mkdir("./json")
         for fc in configMgr.fitConfigs:
-            if not os.path.isdir(f"./json/{configMgr.analysisName}"):
-                os.mkdir(f"./json/{configMgr.analysisName}")
-            prefix = fc.name
-            fileName = f"{configMgr.analysisName}_{prefix}.json"
-            filePath = f"./json/{configMgr.analysisName}/{fileName}"
-            xmlPath = f"./config/{configMgr.analysisName}/{prefix}.xml"
-            create_file = subprocess.run(["pyhf", "xml2json", f"{xmlPath}", "--basedir", ".", 
-                                        "--output-file", f"{filePath}"])
+            conversions.create_json(fc.name, configMgr.analysisName)
 
     log.info("Leaving HistFitter... Bye!")
